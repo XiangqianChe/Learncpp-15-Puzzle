@@ -69,6 +69,10 @@ public:
 	Direction(Type type)
 		:m_type{ type }
 	{}
+	Type getType() const
+	{
+		return m_type;
+	}
 	Direction operator-() const
 	{
 		switch (m_type)
@@ -128,24 +132,44 @@ namespace UserInput
 	}
 }
 
+struct Point
+{
+public:
+	int x{};
+	int y{};
+	Point getAdjacentPoint(Direction direction) const
+	{
+		switch (direction.getType())
+		{
+		case Direction::up: return Point{ x, y - 1 };
+		case Direction::down: return Point{ x, y + 1 };
+		case Direction::left: return Point{ x - 1, y };
+		case Direction::right: return Point{ x + 1, y };
+		default: return *this;
+		}
+	}
+	friend bool operator==(Point a, Point b);
+	friend bool operator!=(Point a, Point b);
+};
+bool operator==(Point a, Point b)
+{
+	return (a.x == b.x) && (a.y == b.y);
+}
+bool operator!=(Point a, Point b)
+{
+	return !(a == b);
+}
+
 int main()
 {
-	Board board{};
-	std::cout << board;
-	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
-	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
-	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
-	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
-	std::cout << "Enter a command: ";
-	while (true)
-	{
-		char command{ UserInput::getCommandFromUser() };
-		if (command == 'q')
-		{
-			std::cout << "\n\nBye!\n\n";
-			return 0;
-		}
-		std::cout << "You entered direction: " << UserInput::charToDir(command) << '\n';
-	}
+	std::cout << std::boolalpha;
+	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::up) == Point{ 1, 0 }) << '\n';
+	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::down) == Point{ 1, 2 }) << '\n';
+	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::left) == Point{ 0, 1 }) << '\n';
+	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::right) == Point{ 2, 1 }) << '\n';
+	std::cout << (Point{ 1, 1 } != Point{ 2, 1 }) << '\n';
+	std::cout << (Point{ 1, 1 } != Point{ 1, 2 }) << '\n';
+	std::cout << !(Point{ 1, 1 } != Point{ 1, 1 }) << '\n';
+
 	return 0;
 }
