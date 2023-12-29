@@ -1,4 +1,9 @@
 ﻿#include <iostream>
+
+// Increase amount of new lines if your board isn't
+// at the very bottom of the console
+constexpr int g_consoleLines{ 25 };
+
 class Tile
 {
 public:
@@ -19,22 +24,41 @@ std::ostream& operator<<(std::ostream& out, Tile tile)
 	else if (tile.m_num > 0)
 		out << "  " << tile.m_num << " ";
 	else if (tile.m_num == 0)
-		out<< "    ";
+		out << "    ";
+	return out;
+}
+
+class Board
+{
+public:
+	Board() = default;
+	friend std::ostream& operator<<(std::ostream& out, const Board& board);
+private:
+	static constexpr int SIZE{ 4 };
+	Tile m_tiles[SIZE][SIZE]{
+		Tile{1}, Tile{2},Tile{3},Tile{4},
+		Tile{5}, Tile{6},Tile{7},Tile{8},
+		Tile{9}, Tile{10},Tile{11},Tile{12},
+		Tile{13}, Tile{14},Tile{15},Tile{0}
+	};
+};
+std::ostream& operator<<(std::ostream& out, const Board& board)
+{
+	for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
+		out << '\n';
+	for (int tileRow{}; tileRow < Board::SIZE; ++tileRow)
+	{
+		for (int tileCol{}; tileCol < Board::SIZE; ++tileCol)
+			out << board.m_tiles[tileRow][tileCol];
+		out << '\n';
+	}
 	return out;
 }
 
 int main()
 {
-	Tile tile1{ 10 };
-	Tile tile2{ 8 };
-	Tile tile3{ 0 }; // the missing tile
-	Tile tile4{ 1 };
-
-	std::cout << "0123456789ABCDEF\n"; // to make it easy to see how many spaces are in the next line
-	std::cout << tile1 << tile2 << tile3 << tile4 << '\n';
-
-	std::cout << std::boolalpha << tile1.isEmpty() << ' ' << tile3.isEmpty() << '\n';
-	std::cout << "Tile 2 has number: " << tile2.getNum() << "\nTile 4 has number: " << tile4.getNum() << '\n';
+	Board board{};
+	std::cout << board;
 
 	return 0;
 }
