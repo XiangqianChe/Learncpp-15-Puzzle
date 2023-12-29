@@ -1,7 +1,7 @@
 ﻿#include <iostream>
+#include <cassert>
+#include "Random.h"
 
-// Increase amount of new lines if your board isn't
-// at the very bottom of the console
 constexpr int g_consoleLines{ 25 };
 
 class Tile
@@ -55,39 +55,97 @@ std::ostream& operator<<(std::ostream& out, const Board& board)
 	return out;
 }
 
+class Direction
+{
+public:
+	enum Type
+	{
+		up,
+		down,
+		left,
+		right,
+		max_directions
+	};
+	Direction(Type type)
+		:m_type{ type }
+	{}
+	Direction operator-() const
+	{
+		switch (m_type)
+		{
+		case up: return Direction{ down };
+		case down: return Direction{ up };
+		case left: return Direction{ right };
+		case right: return Direction{ left };
+		}
+		assert(0 && "Unsupported direction!");
+		return Direction{ up };
+	}
+	friend std::ostream& operator<<(std::ostream& out, Direction direction);
+	static Direction getRandomDirection()
+	{
+		return Direction{ static_cast<Type>(Random::get(0, max_directions - 1)) };
+	}
+private:
+	Type m_type{};
+};
+std::ostream& operator<<(std::ostream& out, Direction direction)
+{
+	switch (direction.m_type)
+	{
+	case Direction::up: return (out << "up");
+	case Direction::down: return (out << "down");
+	case Direction::left: return (out << "left");
+	case Direction::right: return (out << "right");
+	default: return (out << "unknown direction");
+	}
+}
+
 namespace UserInput
 {
-	bool isValidCommand(char command)
-	{
-		return command == 'w'
-			|| command == 'a'
-			|| command == 's'
-			|| command == 'd'
-			|| command == 'q';
-	}
 	char getCommandFromUser()
 	{
 		char command{};
 		std::cin >> command;
 		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-		if (!isValidCommand(command))
+		if ((command != 'w') && (command != 'a') &&
+			(command != 's') && (command != 'd') &&
+			(command != 'q'))
 			command = getCommandFromUser();
 		return command;
 	}
+	Direction charToDir(char command)
+	{
+		switch (command)
+		{
+		case 'w': return Direction{ Direction::up };
+		case 's': return Direction{ Direction::down };
+		case 'a': return Direction{ Direction::left };
+		case 'd': return Direction{ Direction::right };
+		}
+		assert(0 && "Unsupported direction!");
+		return Direction{ Direction::up };
+	}
 }
+
 int main()
 {
 	Board board{};
 	std::cout << board;
+	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
+	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
+	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
+	std::cout << "Generating random direction... " << Direction::getRandomDirection() << '\n';
+	std::cout << "Enter a command: ";
 	while (true)
 	{
 		char command{ UserInput::getCommandFromUser() };
-		std::cout << "Valid command: " << command << '\n';
 		if (command == 'q')
 		{
 			std::cout << "\n\nBye!\n\n";
 			return 0;
 		}
+		std::cout << "You entered direction: " << UserInput::charToDir(command) << '\n';
 	}
 	return 0;
 }
