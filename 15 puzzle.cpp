@@ -45,7 +45,7 @@ private:
 std::ostream& operator<<(std::ostream& out, const Board& board)
 {
 	for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
-		out << '\n';
+		std::cout << '\n';
 	for (int tileRow{}; tileRow < Board::SIZE; ++tileRow)
 	{
 		for (int tileCol{}; tileCol < Board::SIZE; ++tileCol)
@@ -55,10 +55,39 @@ std::ostream& operator<<(std::ostream& out, const Board& board)
 	return out;
 }
 
+namespace UserInput
+{
+	bool isValidCommand(char command)
+	{
+		return command == 'w'
+			|| command == 'a'
+			|| command == 's'
+			|| command == 'd'
+			|| command == 'q';
+	}
+	char getCommandFromUser()
+	{
+		char command{};
+		std::cin >> command;
+		std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		if (!isValidCommand(command))
+			command = getCommandFromUser();
+		return command;
+	}
+}
 int main()
 {
 	Board board{};
 	std::cout << board;
-
+	while (true)
+	{
+		char command{ UserInput::getCommandFromUser() };
+		std::cout << "Valid command: " << command << '\n';
+		if (command == 'q')
+		{
+			std::cout << "\n\nBye!\n\n";
+			return 0;
+		}
+	}
 	return 0;
 }
