@@ -4,57 +4,6 @@
 
 constexpr int g_consoleLines{ 25 };
 
-class Tile
-{
-public:
-	Tile() = default;
-	explicit Tile(int num)
-		:m_num{ num }
-	{}
-	friend std::ostream& operator<<(std::ostream& out, Tile tile);
-	int getNum() const { return m_num; }
-	bool isEmpty() const { return m_num == 0; }
-private:
-	int m_num{};
-};
-std::ostream& operator<<(std::ostream& out, Tile tile)
-{
-	if (tile.m_num > 9)
-		out << " " << tile.m_num << " ";
-	else if (tile.m_num > 0)
-		out << "  " << tile.m_num << " ";
-	else if (tile.m_num == 0)
-		out << "    ";
-	return out;
-}
-
-class Board
-{
-public:
-	Board() = default;
-	friend std::ostream& operator<<(std::ostream& out, const Board& board);
-private:
-	static constexpr int SIZE{ 4 };
-	Tile m_tiles[SIZE][SIZE]{
-		Tile{1}, Tile{2},Tile{3},Tile{4},
-		Tile{5}, Tile{6},Tile{7},Tile{8},
-		Tile{9}, Tile{10},Tile{11},Tile{12},
-		Tile{13}, Tile{14},Tile{15},Tile{0}
-	};
-};
-std::ostream& operator<<(std::ostream& out, const Board& board)
-{
-	for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
-		std::cout << '\n';
-	for (int tileRow{}; tileRow < Board::SIZE; ++tileRow)
-	{
-		for (int tileCol{}; tileCol < Board::SIZE; ++tileCol)
-			out << board.m_tiles[tileRow][tileCol];
-		out << '\n';
-	}
-	return out;
-}
-
 class Direction
 {
 public:
@@ -85,7 +34,17 @@ public:
 		assert(0 && "Unsupported direction!");
 		return Direction{ up };
 	}
-	friend std::ostream& operator<<(std::ostream& out, Direction direction);
+	friend std::ostream& operator<<(std::ostream& out, Direction direction)
+	{
+		switch (direction.m_type)
+		{
+		case Direction::up: return (out << "up");
+		case Direction::down: return (out << "down");
+		case Direction::left: return (out << "left");
+		case Direction::right: return (out << "right");
+		default: return (out << "unknown direction");
+		}
+	}
 	static Direction getRandomDirection()
 	{
 		return Direction{ static_cast<Type>(Random::get(0, max_directions - 1)) };
@@ -93,17 +52,32 @@ public:
 private:
 	Type m_type{};
 };
-std::ostream& operator<<(std::ostream& out, Direction direction)
+
+struct Point
 {
-	switch (direction.m_type)
+public:
+	int x{};
+	int y{};
+	Point getAdjacentPoint(Direction direction) const
 	{
-	case Direction::up: return (out << "up");
-	case Direction::down: return (out << "down");
-	case Direction::left: return (out << "left");
-	case Direction::right: return (out << "right");
-	default: return (out << "unknown direction");
+		switch (direction.getType())
+		{
+		case Direction::up: return Point{ x, y - 1 };
+		case Direction::down: return Point{ x, y + 1 };
+		case Direction::left: return Point{ x - 1, y };
+		case Direction::right: return Point{ x + 1, y };
+		default: return *this;
+		}
 	}
-}
+	friend bool operator==(Point p1, Point p2)
+	{
+		return (p1.x == p2.x) && (p1.y == p2.y);
+	}
+	friend bool operator!=(Point p1, Point p2)
+	{
+		return !(p1 == p2);
+	}
+};
 
 namespace UserInput
 {
@@ -132,44 +106,99 @@ namespace UserInput
 	}
 }
 
-struct Point
+class Tile
 {
 public:
-	int x{};
-	int y{};
-	Point getAdjacentPoint(Direction direction) const
+	Tile() = default;
+	explicit Tile(int num)
+		:m_num{ num }
+	{}
+	int getNum() const { return m_num; }
+	bool isEmpty() const { return m_num == 0; }
+	friend std::ostream& operator<<(std::ostream& out, Tile tile)
 	{
-		switch (direction.getType())
-		{
-		case Direction::up: return Point{ x, y - 1 };
-		case Direction::down: return Point{ x, y + 1 };
-		case Direction::left: return Point{ x - 1, y };
-		case Direction::right: return Point{ x + 1, y };
-		default: return *this;
-		}
+		if (tile.m_num > 9)
+			out << " " << tile.m_num << " ";
+		else if (tile.m_num > 0)
+			out << "  " << tile.m_num << " ";
+		else if (tile.m_num == 0)
+			out << "    ";
+		return out;
 	}
-	friend bool operator==(Point a, Point b);
-	friend bool operator!=(Point a, Point b);
+private:
+	int m_num{};
 };
-bool operator==(Point a, Point b)
+
+class Board
 {
-	return (a.x == b.x) && (a.y == b.y);
-}
-bool operator!=(Point a, Point b)
-{
-	return !(a == b);
-}
+public:
+	Board() = default;
+	bool isValidPoint(Point point)
+	{
+		return (point.x >= 0 && point.x < SIZE)
+			&& (point.y >= 0 && point.y < SIZE);
+	}
+	Point findEmptyTilePoint() const
+	{
+		for (int tileRow{}; tileRow < SIZE; ++tileRow)
+			for (int tileCol{}; tileCol < SIZE; ++tileCol)
+				if (m_tiles[tileRow][tileCol].isEmpty())
+					return { tileCol, tileRow };
+		assert(0 && "No empty tile!");
+		return { -1, -1 };
+	}
+	void swapTiles(Point p1, Point p2)
+	{
+		std::swap(m_tiles[p1.y][p1.x], m_tiles[p2.y][p2.x]);
+	}
+	bool moveTile(Direction direction)
+	{
+		Point emptyTilePoint{ findEmptyTilePoint() };
+		Point ajacentPoint{ emptyTilePoint.getAdjacentPoint(-direction) };
+		if (!isValidPoint(ajacentPoint)) return false;
+		swapTiles(emptyTilePoint, ajacentPoint);
+		return true;
+	}
+	friend std::ostream& operator<<(std::ostream& out, const Board& board)
+	{
+		for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
+			std::cout << '\n';
+		for (int tileRow{}; tileRow < Board::SIZE; ++tileRow)
+		{
+			for (int tileCol{}; tileCol < Board::SIZE; ++tileCol)
+				out << board.m_tiles[tileRow][tileCol];
+			out << '\n';
+		}
+		return out;
+	}
+private:
+	static constexpr int SIZE{ 4 };
+	Tile m_tiles[SIZE][SIZE]{
+		Tile{1}, Tile{2},Tile{3},Tile{4},
+		Tile{5}, Tile{6},Tile{7},Tile{8},
+		Tile{9}, Tile{10},Tile{11},Tile{12},
+		Tile{13}, Tile{14},Tile{15},Tile{0}
+	};
+};
 
 int main()
 {
-	std::cout << std::boolalpha;
-	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::up) == Point{ 1, 0 }) << '\n';
-	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::down) == Point{ 1, 2 }) << '\n';
-	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::left) == Point{ 0, 1 }) << '\n';
-	std::cout << (Point{ 1, 1 }.getAdjacentPoint(Direction::right) == Point{ 2, 1 }) << '\n';
-	std::cout << (Point{ 1, 1 } != Point{ 2, 1 }) << '\n';
-	std::cout << (Point{ 1, 1 } != Point{ 1, 2 }) << '\n';
-	std::cout << !(Point{ 1, 1 } != Point{ 1, 1 }) << '\n';
+	Board board{};
+	std::cout << board;
+	std::cout << "Enter a command: ";
+	while (true)
+	{
+		char ch{ UserInput::getCommandFromUser() };
+		if (ch == 'q')
+		{
+			std::cout << "\n\nBye!\n\n";
+			return 0;
+		}
+		Direction dir{ UserInput::charToDir(ch) };
+		bool tileMoved{ board.moveTile(dir) };
+		if (tileMoved)
+			std::cout << board;
+	}
 
 	return 0;
 }
