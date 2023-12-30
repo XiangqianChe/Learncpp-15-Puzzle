@@ -2,7 +2,7 @@
 #include <cassert>
 #include "Random.h"
 
-constexpr int g_consoleLines{ 25 };
+constexpr int g_consoleLines{ 15 };
 
 class Direction
 {
@@ -159,16 +159,37 @@ public:
 		swapTiles(emptyTilePoint, ajacentPoint);
 		return true;
 	}
+	void randomize()
+	{
+		for (int moveCount{}; moveCount < 1000; ++moveCount)
+		{
+			Direction randomDirection{ Direction::getRandomDirection() };
+			if (!moveTile(randomDirection)) --moveCount;
+		}
+	}
+	bool playerWon()
+	{
+		static Board solvedBoard{};
+		return *this == solvedBoard;
+	}
+	friend bool operator==(const Board& b1, const Board& b2)
+	{
+		for (int tileRow{}; tileRow < SIZE; ++tileRow)
+			for (int tileCol{}; tileCol < SIZE; ++tileCol)
+				if (b1.m_tiles[tileRow][tileCol].getNum() != b2.m_tiles[tileRow][tileCol].getNum())
+					return false;
+		return true;
+	}
 	friend std::ostream& operator<<(std::ostream& out, const Board& board)
 	{
-		for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
-			std::cout << '\n';
 		for (int tileRow{}; tileRow < Board::SIZE; ++tileRow)
 		{
 			for (int tileCol{}; tileCol < Board::SIZE; ++tileCol)
 				out << board.m_tiles[tileRow][tileCol];
 			out << '\n';
 		}
+		for (int lineCount{}; lineCount < g_consoleLines; ++lineCount)
+			std::cout << '\n';
 		return out;
 	}
 private:
@@ -180,14 +201,25 @@ private:
 		Tile{13}, Tile{14},Tile{15},Tile{0}
 	};
 };
-
+void printIntro()
+{
+	std::cout << ">>>>>>>>>> GAME: 15 PUZZLE <<<<<<<<<<\n"
+		<< "https://en.wikipedia.org/wiki/15_Puzzle\n\n"
+		<< "w - slide tile up\n"
+		<< "a - slide tile left\n"
+		<< "s - slide tile down\n"
+		<< "d - slide tile right\n"
+		<< "q - quit game\n\n\n";
+}
 int main()
 {
+	printIntro();
 	Board board{};
+	board.randomize();
 	std::cout << board;
-	std::cout << "Enter a command: ";
-	while (true)
+	while (!board.playerWon())
 	{
+		std::cout << ">> ";
 		char ch{ UserInput::getCommandFromUser() };
 		if (ch == 'q')
 		{
@@ -199,6 +231,6 @@ int main()
 		if (tileMoved)
 			std::cout << board;
 	}
-
+	std::cout << "\n\nYou won!\n\n";
 	return 0;
 }
